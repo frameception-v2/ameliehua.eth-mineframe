@@ -22,17 +22,125 @@ import { createStore } from "mipd";
 import { Label } from "~/components/ui/label";
 import { PROJECT_TITLE } from "~/lib/constants";
 
-function ExampleCard() {
+type Cell = {
+  isMine: boolean;
+  isRevealed: boolean;
+  adjacentMines: number;
+};
+
+function MinesweeperCard() {
+  const [board, setBoard] = useState<Cell[][]>(() =>
+    Array(BOARD_SIZE).fill(null).map(() => 
+      Array(BOARD_SIZE).fill(null).map(() => ({
+        isMine: false,
+        isRevealed: false,
+        adjacentMines: 0
+      }))
+    )
+  );
+  const [gameOver, setGameOver] = useState(false);
+  
+  // Initialize mines
+  useEffect(() => {
+    const newBoard = [...board];
+    // Generate mines
+    const generateMines = () => {
+      let minesPlaced = 0;
+      while (minesPlaced < MINE_COUNT) {
+        const x = Math.floor(Math.random() * BOARD_SIZE);
+        const y = Math.floor(Math.random() * BOARD_SIZE);
+        if (!newBoard[y][x].isMine) {
+          newBoard[y][x].isMine = true;
+          minesPlaced++;
+        }
+      }
+    };
+    
+    // Calculate adjacent mines
+    const calculateAdjacentMines = () => {
+      for (let y = 0; y < BOARD_SIZE; y++) {
+        for (let x = 0; x < BOARD_SIZE; x++) {
+          if (!newBoard[y][x].isMine) {
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const ny = y + dy;
+                const nx = x + dx;
+                if (ny >= 0 && ny < BOARD_SIZE && nx >= 0 && nx < BOARD_SIZE) {
+                  if (newBoard[ny][nx].isMine) count++;
+                }
+              }
+            }
+            newBoard[y][x].adjacentMines = count;
+          }
+        }
+      }
+    };
+    
+    generateMines();
+    calculateAdjacentMines();
+    setBoard(newBoard);
+  }, []);
+
+  const handleCellClick = (y: number, x: number) => {
+    if (gameOver || board[y][x].isRevealed) return;
+    
+    const newBoard = [...board];
+    newBoard[y][x].isRevealed = true;
+    
+    if (newBoard[y][x].isMine) {
+      setGameOver(true);
+    }
+    
+    setBoard(newBoard);
+  };
+
+  const renderCell = (y: number, x: number) => {
+    const cell = board[y][x];
+    if (!cell.isRevealed) {
+      return (
+        <button
+          className="w-8 h-8 bg-gray-200 hover:bg-gray-300 border"
+          onClick={() => handleCellClick(y, x)}
+        />
+      );
+    }
+    return (
+      <div className="w-8 h-8 bg-gray-100 border flex items-center justify-center">
+        {cell.isMine ? '💣' : cell.adjacentMines || ''}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to the Frame Template</CardTitle>
+        <CardTitle>Mineframe Sweeper</CardTitle>
         <CardDescription>
-          This is an example card that you can customize or remove
+          Find {MINE_COUNT} hidden mines! Click to reveal cells.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Label>Place content in a Card here.</Label>
+        <div className="grid grid-cols-8 gap-1">
+          {board.map((row, y) => 
+            row.map((_, x) => (
+              <div key={`${y}-${x}`}>
+                {renderCell(y, x)}
+              </div>
+            ))
+          )}
+        </div>
+        {gameOver && (
+          <div className="mt-4 text-red-600 font-bold">
+            Game Over! Mine hit!
+          </div>
+        )}
+        <button 
+          className="mt-4 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+          onClick={() => window.location.reload()}
+        >
+          New Game
+        </button>
       </CardContent>
     </Card>
   );
@@ -140,7 +248,7 @@ export default function Frame() {
         <h1 className="text-2xl font-bold text-center mb-4 text-gray-700 dark:text-gray-300">
           {PROJECT_TITLE}
         </h1>
-        <ExampleCard />
+        <MinesweeperCard />
       </div>
     </div>
   );
