@@ -20,7 +20,7 @@ import { base, optimism } from "wagmi/chains";
 import { useSession } from "next-auth/react";
 import { createStore } from "mipd";
 import { Label } from "~/components/ui/label";
-import { PROJECT_TITLE } from "~/lib/constants";
+import { PROJECT_TITLE, BOARD_SIZE, MINE_COUNT } from "~/lib/constants";
 
 type Cell = {
   isMine: boolean;
@@ -42,6 +42,7 @@ function MinesweeperCard() {
   
   // Initialize mines
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const newBoard = [...board];
     // Generate mines
     const generateMines = () => {
